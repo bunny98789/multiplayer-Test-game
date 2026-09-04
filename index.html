@@ -93,16 +93,51 @@
             color: #66aaff;
         }
 
-        #reload {
-            color: #ffaa44;
-            display: none;
-        }
-
         #instructions {
             margin-top: 10px;
             color: #999;
             font-size: 14px;
         }
+
+        #game-wrapper {
+    position: relative;
+    width: 600px;
+    height: 400px;
+    margin: 0 auto;
+}
+
+#game-wrapper canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+#reload {
+    position: absolute;
+
+    left: 0;
+    top: 50%;
+
+    width: 100%;
+
+    transform: translateY(-50%);
+
+    text-align: center;
+
+    color: #ffaa44;
+
+    font-size: 24px;
+    font-weight: bold;
+
+    text-shadow:
+        2px 2px 4px black;
+
+    display: none;
+
+    pointer-events: none;
+
+    z-index: 10;
+}
     </style>
 </head>
 
@@ -148,17 +183,19 @@
 
 </div>
 
-<div id="reload">
-    RELOADING...
+<div id="game-wrapper">
+
+    <canvas
+        id="gameCanvas"
+        width="600"
+        height="400">
+    </canvas>
+
+    <div id="reload">
+        RELOADING...
+    </div>
+
 </div>
-
-
-<canvas
-    id="gameCanvas"
-    width="600"
-    height="400">
-</canvas>
-
 
 <div id="instructions">
     WASD / Arrow Keys = Move &nbsp; | &nbsp;
