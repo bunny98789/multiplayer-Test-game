@@ -730,6 +730,13 @@ joinRoomButton.addEventListener(
         "keydown",
         (e) => {
 
+            if (
+             e.target.tagName === "INPUT" ||
+            e.target.tagName === "TEXTAREA"
+            ) {
+            return;
+            }   
+
             const key =
                 e.key.toLowerCase();
 
