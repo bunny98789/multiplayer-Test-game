@@ -183,8 +183,41 @@
 
 </div>
 
-<div id="game-wrapper">
+    <div id="roomMenu">
 
+    <input
+        id="usernameInput"
+        placeholder="Username"
+        maxlength="16"
+    >
+
+    <br><br>
+
+    <button id="createRoomButton">
+        Create Room
+    </button>
+
+    <br><br>
+
+    <input
+        id="roomInput"
+        placeholder="Room Code"
+        maxlength="8"
+    >
+
+    <button id="joinRoomButton">
+        Join Room
+    </button>
+
+    <p id="roomDisplay"></p>
+
+    <p id="roomError"></p>
+
+</div>
+
+
+<div id="game-wrapper">
+    
     <canvas
         id="gameCanvas"
         width="600"
@@ -251,6 +284,24 @@
         document.getElementById("reload");
 
 
+    const usernameInput =
+    document.getElementById("usernameInput");
+
+const createRoomButton =
+    document.getElementById("createRoomButton");
+
+const joinRoomButton =
+    document.getElementById("joinRoomButton");
+
+const roomInput =
+    document.getElementById("roomInput");
+
+const roomDisplay =
+    document.getElementById("roomDisplay");
+
+const roomError =
+    document.getElementById("roomError");
+
     /*
      * =========================
      * GAME VARIABLES
@@ -272,6 +323,78 @@
     const speed = 8;
     
     let shooting = false;
+
+    createRoomButton.addEventListener(
+    "click",
+    () => {
+
+        if (!socket || !socket.connected) {
+            return;
+        }
+
+        const username =
+            usernameInput.value.trim();
+
+        if (!username) {
+            roomError.innerText =
+                "Enter a username first.";
+
+            return;
+        }
+
+        socket.emit(
+            "createRoom",
+            username
+        );
+
+    }
+);
+
+
+joinRoomButton.addEventListener(
+    "click",
+    () => {
+
+        if (!socket || !socket.connected) {
+            return;
+        }
+
+        const username =
+            usernameInput.value.trim();
+
+        const roomCode =
+            roomInput.value.trim();
+
+        if (!username) {
+
+            roomError.innerText =
+                "Enter a username first.";
+
+            return;
+
+        }
+
+        if (!roomCode) {
+
+            roomError.innerText =
+                "Enter a room code.";
+
+            return;
+
+        }
+
+
+        socket.emit(
+            "joinRoom",
+            {
+                username: username,
+                roomCode: roomCode
+            }
+        );
+
+    }
+);
+
 
 
     /*
@@ -966,6 +1089,24 @@
 
         ctx.stroke();
     }
+
+        // Username
+
+ctx.globalAlpha = 1;
+
+ctx.fillStyle = "white";
+
+ctx.font = "bold 14px Arial";
+
+ctx.textAlign = "center";
+
+ctx.textBaseline = "bottom";
+
+ctx.fillText(
+    player.username,
+    player.x,
+    player.y - 25
+);
 
 
     // =========================
