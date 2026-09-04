@@ -223,6 +223,7 @@
     let socket = null;
 
     let players = {};
+    let bullets = {};
 
     let myPlayerId = null;
 
@@ -398,6 +399,17 @@
                 updateHUD();
             }
         );
+
+        socket.on(
+        "updateBullets",
+        (newBullets) => {
+
+        bullets =
+            newBullets;
+
+        drawGame();
+    }
+);
 
     }
 
@@ -903,6 +915,40 @@
         }
 
     }
+
+    /*
+ * =========================
+ * DRAW BULLETS
+ * =========================
+ */
+
+for (const id in bullets) {
+
+    const bullet =
+        bullets[id];
+
+    if (!bullet) {
+        continue;
+    }
+
+
+    ctx.fillStyle =
+        "white";
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        bullet.x,
+        bullet.y,
+        5,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+}
 
 
     /*
