@@ -653,6 +653,36 @@ joinRoomButton.addEventListener(
             }
         );
 
+// =========================
+// ROOM JOINED
+// =========================
+
+socket.on("roomJoined", (data) => {
+
+    roomDisplay.innerText =
+        "Room: " + data.roomCode;
+
+    roomError.innerText = "";
+
+    console.log(
+        "Joined room:",
+        data.roomCode
+    );
+
+});
+
+
+// =========================
+// ROOM ERROR
+// =========================
+
+socket.on("roomError", (message) => {
+
+    roomError.innerText =
+        message;
+
+});
+
 
         /*
          * PLAYER / GAME STATE
