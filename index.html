@@ -610,78 +610,113 @@
 
     function movementLoop() {
 
+    if (
+        socket &&
+        socket.connected &&
+        myPlayerId &&
+        players[myPlayerId]
+    ) {
+
+        let forward = 0;
+        let strafe = 0;
+
+
+        /*
+         * FORWARD / BACKWARD
+         */
+
         if (
-            socket &&
-            socket.connected
+            keys["w"] ||
+            keys["arrowup"]
+        ) {
+            forward += 1;
+        }
+
+        if (
+            keys["s"] ||
+            keys["arrowdown"]
+        ) {
+            forward -= 1;
+        }
+
+
+        /*
+         * LEFT / RIGHT STRAFE
+         */
+
+        if (
+            keys["a"] ||
+            keys["arrowleft"]
+        ) {
+            strafe -= 1;
+        }
+
+        if (
+            keys["d"] ||
+            keys["arrowright"]
+        ) {
+            strafe += 1;
+        }
+
+
+        /*
+         * Convert forward/strafe movement
+         * into X/Y using the player's angle.
+         */
+
+        if (
+            forward !== 0 ||
+            strafe !== 0
         ) {
 
-            let x = 0;
-            let y = 0;
+            const angle = myAngle;
 
 
-            if (
-                keys["w"] ||
-                keys["arrowup"]
-            ) {
-                y -= 1;
-            }
+            let x =
+                Math.cos(angle) * forward
+                +
+                Math.cos(angle + Math.PI / 2) * strafe;
 
 
-            if (
-                keys["s"] ||
-                keys["arrowdown"]
-            ) {
-                y += 1;
-            }
-
-
-            if (
-                keys["a"] ||
-                keys["arrowleft"]
-            ) {
-                x -= 1;
-            }
-
-
-            if (
-                keys["d"] ||
-                keys["arrowright"]
-            ) {
-                x += 1;
-            }
+            let y =
+                Math.sin(angle) * forward
+                +
+                Math.sin(angle + Math.PI / 2) * strafe;
 
 
             /*
              * Normalize diagonal movement.
              */
 
-            if (x !== 0 || y !== 0) {
+            const length =
+                Math.sqrt(
+                    x * x + y * y
+                );
 
-                const length =
-                    Math.sqrt(
-                        x * x + y * y
-                    );
 
+            if (length > 0) {
 
                 x /= length;
                 y /= length;
 
-                socket.emit(
-                 "move",
-                  {
+            }
+
+
+            socket.emit(
+                "move",
+                {
                     x: x * speed,
                     y: y * speed
-                  }
-                );
-            }
+                }
+            );
         }
-
-
-        requestAnimationFrame(
-            movementLoop
-        );
     }
 
+
+    requestAnimationFrame(
+        movementLoop
+    );
+}
 
     movementLoop();
 
