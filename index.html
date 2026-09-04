@@ -400,6 +400,11 @@
             }
         );
 
+        socket.on("updateBullets", (newBullets) => {
+            bullets = newBullets;
+            drawGame();
+        });
+
     }
 
 
@@ -931,7 +936,39 @@
     // =========================
 
     ctx.globalAlpha = 1;
+   
 }
+
+// =========================
+// DRAW BULLETS
+// =========================
+
+for (const id in bullets) {
+
+    const bullet = bullets[id];
+
+    if (!bullet) {
+        continue;
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "white";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        bullet.x,
+        bullet.y,
+        5,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+}
+
+}
+
 
     /*
      * =========================
