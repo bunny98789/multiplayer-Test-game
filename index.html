@@ -230,6 +230,8 @@
     let mouseY = canvas.height / 2;
 
     let myAngle = 0;
+
+    const speed = 12;
     
     let shooting = false;
 
@@ -663,9 +665,6 @@
 
                 x /= length;
                 y /= length;
-
-
-                const speed = 8;
 
                 socket.emit(
                  "move",
