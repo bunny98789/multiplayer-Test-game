@@ -229,6 +229,8 @@
     let mouseX = canvas.width / 2;
     let mouseY = canvas.height / 2;
 
+    let myAngle = 0;
+    
     let shooting = false;
 
 
@@ -426,40 +428,47 @@
 
     function updateAim() {
 
-        if (
-            !socket ||
-            !socket.connected ||
-            !myPlayerId ||
-            !players[myPlayerId]
-        ) {
-            return;
-        }
+    if (
+        !myPlayerId ||
+        !players[myPlayerId]
+    ) {
+        return;
+    }
 
+    const player =
+        players[myPlayerId];
 
-        const player =
-            players[myPlayerId];
+    myAngle =
+        Math.atan2(
+            mouseY - player.y,
+            mouseX - player.x
+        );
 
+    /*
+     * Update our local player immediately
+     * so aiming feels instant.
+     */
 
-        const angle =
-            Math.atan2(
-                mouseY - player.y,
-                mouseX - player.x
-            );
+    player.angle = myAngle;
 
+    /*
+     * Tell the server too.
+     */
 
-        /*
-         * Tell server which direction
-         * we're aiming.
-         */
-
+    if (
+        socket &&
+        socket.connected
+    ) {
         socket.emit(
             "aim",
             {
-                angle: angle
+                angle: myAngle
             }
         );
     }
 
+    drawGame();
+}
 
     /*
      * =========================
@@ -656,12 +665,14 @@
                 y /= length;
 
 
+                const speed = 6;
+
                 socket.emit(
-                    "move",
-                    {
-                        x: x,
-                        y: y
-                    }
+                 "move",
+                  {
+                    x: x * speed,
+                    y: y * speed
+                  }
                 );
             }
         }
