@@ -400,17 +400,6 @@
             }
         );
 
-        socket.on(
-        "updateBullets",
-        (newBullets) => {
-
-        bullets =
-            newBullets;
-
-        drawGame();
-    }
-);
-
     }
 
 
@@ -809,146 +798,140 @@
 
         for (let id in players) {
 
-            const player =
-                players[id];
+    const player = players[id];
 
-
-            if (!player) {
-                continue;
-            }
-
-
-            /*
-             * Reloading transparency.
-             */
-
-            ctx.globalAlpha =
-                player.reloading
-                    ? 0.5
-                    : 1;
-
-
-            /*
-             * Player body.
-             */
-
-            ctx.fillStyle =
-                player.color || "green";
-
-
-            ctx.beginPath();
-
-            ctx.arc(
-                player.x,
-                player.y,
-                20,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-
-
-            /*
-             * Aim / gun indicator.
-             */
-
-            const angle =
-                player.angle || 0;
-
-
-            const gunLength = 28;
-
-
-            ctx.strokeStyle =
-                "white";
-
-            ctx.lineWidth = 6;
-
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-                player.x,
-                player.y
-            );
-
-            ctx.lineTo(
-                player.x +
-                    Math.cos(angle) *
-                    gunLength,
-
-                player.y +
-                    Math.sin(angle) *
-                    gunLength
-            );
-
-            ctx.stroke();
-
-
-            /*
-             * Player outline.
-             */
-
-            ctx.strokeStyle =
-                id === myPlayerId
-                    ? "white"
-                    : "#777";
-
-            ctx.lineWidth = 2;
-
-
-            ctx.beginPath();
-
-            ctx.arc(
-                player.x,
-                player.y,
-                20,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.stroke();
-
-
-            ctx.globalAlpha = 1;
-        }
-
-    /*
- * =========================
- * DRAW BULLETS
- * =========================
- */
-
-for (const id in bullets) {
-
-    const bullet =
-        bullets[id];
-
-    if (!bullet) {
+    if (!player) {
         continue;
     }
 
+    // =========================
+    // DEAD / RELOADING ALPHA
+    // =========================
+
+    if (player.dead) {
+        ctx.globalAlpha = 0.25;
+    } else if (player.reloading) {
+        ctx.globalAlpha = 0.5;
+    } else {
+        ctx.globalAlpha = 1;
+    }
+
+
+    // =========================
+    // PLAYER BODY
+    // =========================
 
     ctx.fillStyle =
-        "white";
-
+        player.color || "green";
 
     ctx.beginPath();
 
     ctx.arc(
-        bullet.x,
-        bullet.y,
-        5,
+        player.x,
+        player.y,
+        20,
         0,
         Math.PI * 2
     );
 
     ctx.fill();
 
-        }
+
+    // =========================
+    // AIM / GUN
+    // =========================
+
+    const angle =
+        player.angle || 0;
+
+    const gunLength = 28;
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 6;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        player.x,
+        player.y
+    );
+
+    ctx.lineTo(
+        player.x +
+            Math.cos(angle) * gunLength,
+
+        player.y +
+            Math.sin(angle) * gunLength
+    );
+
+    ctx.stroke();
+
+
+    // =========================
+    // PLAYER OUTLINE
+    // =========================
+
+    ctx.strokeStyle =
+        id === myPlayerId
+            ? "white"
+            : "#777";
+
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        player.x,
+        player.y,
+        20,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.stroke();
+
+
+    // =========================
+    // DEAD PLAYER X
+    // =========================
+
+    if (player.dead) {
+
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 4;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            player.x - 12,
+            player.y - 12
+        );
+
+        ctx.lineTo(
+            player.x + 12,
+            player.y + 12
+        );
+
+        ctx.moveTo(
+            player.x + 12,
+            player.y - 12
+        );
+
+        ctx.lineTo(
+            player.x - 12,
+            player.y + 12
+        );
+
+        ctx.stroke();
     }
 
+
+    // =========================
+    // RESET ALPHA
+    // =========================
+
+    ctx.globalAlpha = 1;
+}
 
     /*
      * =========================
