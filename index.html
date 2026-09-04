@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FREE MULTIPLAYER GAME</title>
+    <style>
+        body {
+            font-family: 'Fredoka One', sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: white;
+            margin: 0;
+            padding-top: 20px;
+        }
+        #connection-panel {
+            margin-bottom: 15px;
+        }
+        input {
+            padding: 8px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
+            width: 280px;
+        }
+        button {
+            padding: 8px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        canvas {
+            background-color: #222;
+            border: 3px solid #444;
+            border-radius: 10px;
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+        p {
+            color: #aaa;
+            font-size: 14px;
+        }
+    </style>
+    <!-- Load the Socket.io client library from a free public CDN -->
+    <script src="https://socket.io"></script>
+</head>
+<body>
+
+    <h1>Free Multi-O Game</h1>
+    
+    <div id="connection-panel">
+        <input type="text" id="server-url" value="http://localhost:3000" placeholder="Paste tunnel link here">
+        <button id="connect-btn">Connect to Server</button>
+    </div>
+
+    <!-- The actual game window canvas -->
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    
+    <p>Use your <b>Arrow Keys</b> or <b>W, A, S, D</b> to move your circle!</p>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const connectBtn = document.getElementById('connect-btn');
+        const serverUrlInput = document.getElementById('server-url');
+        
+        let socket = null;
+
+        function connectToServer() {
+            // If already connected, disconnect first
+            if (socket) socket.disconnect();
+
+            const url = serverUrlInput.value.trim();
+            
+            // Connect to either localhost or your free tunnel link
+            socket = io(url);
+
+            // Triggered when successfully connected
+            socket.on('connect', () => {
+                console.log('Connected to game server!');
+                connectBtn.innerText = "Connected!";
+                connectBtn.style.backgroundColor = "green";
+            });
+
+            // Listen for structural state updates from the server
+            socket.on('updatePlayers', (players) => {
+                // 1. Wipe the frame clean
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 2. Loop through all players and draw them on screen
+                for (let id in players) {
+                    ctx.fillStyle = players[id].color || 'green';
+                    ctx.beginPath();
+                    // Draw player at their X and Y coordinates with a radius of 20
+                    ctx.arc(players[id].x, players[id].y, 20, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.closePath();
+                }
+            });
+
+            socket.on('disconnect', () => {
+                connectBtn.innerText = "Connect to Server";
+                connectBtn.style.backgroundColor = "#007bff";
+            });
+        }
+
+        // Connect automatically on page load
+        connectToServer();
+        connectBtn.addEventListener('click', connectToServer);
+
+        // Listen for keyboard movement controls
+        window.addEventListener('keydown', (e) => {
+            if (!socket || !socket.connected) return;
+
+            let moveX = 0;
+            let moveY = 0;
+            const speed = 8; // Adjust step speed
+
+            // Handle Arrow keys or WASD
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveX = speed;
+            if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') moveX = -speed;
+            if (e.key === 'ArrowUp'    || e.key === 'w' || e.key === 'W') moveY = -speed;
+            if (e.key === 'ArrowDown'  || e.key === 's' || e.key === 'S') moveY = speed;
+
+            // Send raw move intent over to your local server block
+            if (moveX !== 0 || moveY !== 0) {
+                socket.emit('move', { x: moveX, y: moveY });
+            }
+        });
+    </script>
+</body>
+</html>
