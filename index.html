@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+```
+<title>FREE MULTIPLAYER GAME</title>
+
+<style>
+    body {
+        font-family: sans-serif;
+        text-align: center;
+        background-color: #121212;
+        color: white;
+        margin: 0;
+        padding-top: 20px;
+    }
+
+    #connection-panel {
+        margin-bottom: 15px;
+    }
+
+    input {
+        padding: 8px;
+        font-size: 16px;
+        border-radius: 5px;
+        border: none;
+        width: 280px;
+    }
+
+    button {
+        padding: 8px 15px;
+        font-size: 16px;
+        cursor: pointer;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+
+    canvas {
+        background-color: #222;
+        border: 3px solid #444;
+        border-radius: 10px;
+        display: block;
+        margin: 0 auto;
+    }
+
+    #status {
+        margin-top: 10px;
+        color: #aaa;
+    }
+</style>
+```
+
+</head>
+
+<body>
+
+```
+<h1>Free Multi-O Game</h1>
+
+<div id="connection-panel">
+    <input
+        type="text"
+        id="server-url"
+        value="http://localhost:3000"
+        placeholder="Server URL"
+    >
+
+    <button id="connect-btn">
+        Connect to Server
+    </button>
+
+    <div id="status">
+        Not connected
+    </div>
+</div>
+
+<canvas
+    id="gameCanvas"
+    width="600"
+    height="400">
+</canvas>
+
+
+<!--
+    SOCKET.IO CLIENT
+
+    IMPORTANT:
+    This MUST load BEFORE the game JavaScript below.
+
+    This is the direct HTTPS Socket.io client file,
+    not a generic CDN homepage.
+-->
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+
+<script>
+
+    const canvas =
+        document.getElementById("gameCanvas");
+
+    const ctx =
+        canvas.getContext("2d");
+
+    const connectBtn =
+        document.getElementById("connect-btn");
+
+    const serverUrlInput =
+        document.getElementById("server-url");
+
+    const statusText =
+        document.getElementById("status");
+
+
+    let socket = null;
+
+
+    function connectToServer() {
+
+        // Make sure Socket.io actually loaded.
+        if (typeof io === "undefined") {
+
+            console.error(
+                "Socket.io failed to load."
+            );
+
+            statusText.innerText =
+                "ERROR: Socket.io library failed to load.";
+
+            statusText.style.color =
+                "red";
+
+            return;
+        }
+
+
+        // Disconnect old connection first.
+        if (socket) {
+            socket.disconnect();
+        }
+
+
+        const url =
+            serverUrlInput.value.trim();
+
+
+        console.log(
+            "Connecting to:",
+            url
+        );
+
+
+        statusText.innerText =
+            "Connecting...";
+
+        statusText.style.color =
+            "yellow";
+
+
+        connectBtn.innerText =
+            "Connecting...";
+
+        connectBtn.style.backgroundColor =
+            "#b8860b";
+
+
+        // Connect to Node.js / Socket.io server
+        socket = io(url);
+
+
+        socket.on("connect", () => {
+
+            console.log(
+                "Connected!",
+                socket.id
+            );
+
+            connectBtn.innerText =
+                "Connected!";
+
+            connectBtn.style.backgroundColor =
+                "green";
+
+            statusText.innerText =
+                "Connected as " + socket.id;
+
+            statusText.style.color =
+                "lightgreen";
+        });
+
+
+        socket.on("disconnect", (reason) => {
+
+            console.log(
+                "Disconnected:",
+                reason
+            );
+
+            connectBtn.innerText =
+                "Connect to Server";
+
+            connectBtn.style.backgroundColor =
+                "#007bff";
+
+            statusText.innerText =
+                "Disconnected: " + reason;
+
+            statusText.style.color =
+                "orange";
+        });
+
+
+        socket.on(
+            "connect_error",
+            (error) => {
+
+                console.error(
+                    "Connection error:",
+                    error
+                );
+
+                connectBtn.innerText =
+                    "Connection Failed";
+
+                connectBtn.style.backgroundColor =
+                    "red";
+
+                statusText.innerText =
+                    "Connection error: " +
+                    error.message;
+
+                statusText.style.color =
+                    "red";
+            }
+        );
+
+
+        socket.on(
+            "updatePlayers",
+            (players) => {
+
+                ctx.clearRect(
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+
+
+                for (let id in players) {
+
+                    const player =
+                        players[id];
+
+
+                    ctx.fillStyle =
+                        player.color || "green";
+
+
+                    ctx.beginPath();
+
+
+                    ctx.arc(
+                        player.x,
+                        player.y,
+                        20,
+                        0,
+                        Math.PI * 2
+                    );
+
+
+                    ctx.fill();
+                }
+            }
+        );
+    }
+
+
+
+    /*
+     * BUTTON
+     */
+
+    connectBtn.addEventListener(
+        "click",
+        connectToServer
+    );
+
+
+
+    /*
+     * MOVEMENT
+     */
+
+    window.addEventListener(
+        "keydown",
+        (e) => {
+
+            if (
+                !socket ||
+                !socket.connected
+            ) {
+                return;
+            }
+
+
+            let moveX = 0;
+            let moveY = 0;
+
+
+            if (
+                e.key === "ArrowRight" ||
+                e.key.toLowerCase() === "d"
+            ) {
+                moveX = 8;
+            }
+
+
+            if (
+                e.key === "ArrowLeft" ||
+                e.key.toLowerCase() === "a"
+            ) {
+                moveX = -8;
+            }
+
+
+            if (
+                e.key === "ArrowUp" ||
+                e.key.toLowerCase() === "w"
+            ) {
+                moveY = -8;
+            }
+
+
+            if (
+                e.key === "ArrowDown" ||
+                e.key.toLowerCase() === "s"
+            ) {
+                moveY = 8;
+            }
+
+
+            if (
+                moveX !== 0 ||
+                moveY !== 0
+            ) {
+
+                // Stop arrow keys from scrolling the page.
+                e.preventDefault();
+
+
+                socket.emit(
+                    "move",
+                    {
+                        x: moveX,
+                        y: moveY
+                    }
+                );
+            }
+        }
+    );
+
+
+
+    /*
+     * Automatically try localhost when
+     * the page first loads.
+     */
+
+    connectToServer();
+
+</script>
+```
+
+</body>
+</html>
