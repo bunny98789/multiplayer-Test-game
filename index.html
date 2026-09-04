@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FREE MULTIPLAYER SHOOTER</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: white;
+            margin: 0;
+            padding-top: 20px;
+            user-select: none;
+        }
+
+        h1 {
+            margin: 0 0 15px 0;
+        }
+
+        #connection-panel {
+            margin-bottom: 15px;
+        }
+
+        input {
+            padding: 8px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
+            width: 280px;
+        }
+
+        button {
+            padding: 8px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            filter: brightness(1.15);
+        }
+
+        canvas {
+            background-color: #222;
+            border: 3px solid #444;
+            border-radius: 10px;
+            display: block;
+            margin: 0 auto;
+            cursor: crosshair;
+        }
+
+        #status {
+            margin-top: 10px;
+            color: #aaa;
+        }
+
+        /*
+         * GAME HUD
+         */
+
+        #hud {
+            width: 600px;
+            margin: 10px auto 0 auto;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        #health {
+            color: #ff5555;
+        }
+
+        #ammo {
+            color: #ffd84d;
+        }
+
+        #round {
+            color: #66aaff;
+        }
+
+        #reload {
+            color: #ffaa44;
+            display: none;
+        }
+
+        #instructions {
+            margin-top: 10px;
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>FREE MULTIPLAYER SHOOTER</h1>
+
+<div id="connection-panel">
+
+    <input
+        type="text"
+        id="server-url"
+        value="http://localhost:3000"
+        placeholder="Server URL"
+    >
+
+    <button id="connect-btn">
+        Connect to Server
+    </button>
+
+    <div id="status">
+        Not connected
+    </div>
+
+</div>
+
+
+<!-- GAME HUD -->
+
+<div id="hud">
+
+    <div id="health">
+        ❤️ 100 HP
+    </div>
+
+    <div id="round">
+        ROUND 1 / 5
+    </div>
+
+    <div id="ammo">
+        🔫 6 / 6
+    </div>
+
+</div>
+
+<div id="reload">
+    RELOADING...
+</div>
+
+
+<canvas
+    id="gameCanvas"
+    width="600"
+    height="400">
+</canvas>
+
+
+<div id="instructions">
+    WASD / Arrow Keys = Move &nbsp; | &nbsp;
+    Mouse = Aim &nbsp; | &nbsp;
+    Left Click = Shoot &nbsp; | &nbsp;
+    R = Reload
+</div>
+
+
+<!--
+    SOCKET.IO CLIENT
+
+    IMPORTANT:
+    This MUST load BEFORE the game JavaScript below.
+-->
+
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+
+<script>
+
+    /*
+     * =========================
+     * ELEMENTS
+     * =========================
+     */
+
+    const canvas =
+        document.getElementById("gameCanvas");
+
+    const ctx =
+        canvas.getContext("2d");
+
+    const connectBtn =
+        document.getElementById("connect-btn");
+
+    const serverUrlInput =
+        document.getElementById("server-url");
+
+    const statusText =
+        document.getElementById("status");
+
+    const healthText =
+        document.getElementById("health");
+
+    const ammoText =
+        document.getElementById("ammo");
+
+    const roundText =
+        document.getElementById("round");
+
+    const reloadText =
+        document.getElementById("reload");
+
+
+    /*
+     * =========================
+     * GAME VARIABLES
+     * =========================
+     */
+
+    let socket = null;
+
+    let players = {};
+
+    let myPlayerId = null;
+
+    let mouseX = canvas.width / 2;
+    let mouseY = canvas.height / 2;
+
+    let shooting = false;
+
+
+    /*
+     * =========================
+     * CONNECTION
+     * =========================
+     */
+
+    function connectToServer() {
+
+        if (typeof io === "undefined") {
+
+            console.error(
+                "Socket.io failed to load."
+            );
+
+            statusText.innerText =
+                "ERROR: Socket.io library failed to load.";
+
+            statusText.style.color =
+                "red";
+
+            return;
+        }
+
+
+        if (socket) {
+            socket.disconnect();
+        }
+
+
+        const url =
+            serverUrlInput.value.trim();
+
+
+        console.log(
+            "Connecting to:",
+            url
+        );
+
+
+        statusText.innerText =
+            "Connecting...";
+
+        statusText.style.color =
+            "yellow";
+
+
+        connectBtn.innerText =
+            "Connecting...";
+
+        connectBtn.style.backgroundColor =
+            "#b8860b";
+
+
+        socket = io(url);
+
+
+        /*
+         * CONNECTED
+         */
+
+        socket.on("connect", () => {
+
+            console.log(
+                "Connected!",
+                socket.id
+            );
+
+            myPlayerId =
+                socket.id;
+
+
+            connectBtn.innerText =
+                "Connected!";
+
+            connectBtn.style.backgroundColor =
+                "green";
+
+
+            statusText.innerText =
+                "Connected as " + socket.id;
+
+            statusText.style.color =
+                "lightgreen";
+        });
+
+
+        /*
+         * DISCONNECTED
+         */
+
+        socket.on("disconnect", (reason) => {
+
+            console.log(
+                "Disconnected:",
+                reason
+            );
+
+
+            myPlayerId = null;
+
+
+            connectBtn.innerText =
+                "Connect to Server";
+
+            connectBtn.style.backgroundColor =
+                "#007bff";
+
+
+            statusText.innerText =
+                "Disconnected: " + reason;
+
+            statusText.style.color =
+                "orange";
+        });
+
+
+        /*
+         * CONNECTION ERROR
+         */
+
+        socket.on(
+            "connect_error",
+            (error) => {
+
+                console.error(
+                    "Connection error:",
+                    error
+                );
+
+
+                connectBtn.innerText =
+                    "Connection Failed";
+
+                connectBtn.style.backgroundColor =
+                    "red";
+
+
+                statusText.innerText =
+                    "Connection error: " +
+                    error.message;
+
+                statusText.style.color =
+                    "red";
+            }
+        );
+
+
+        /*
+         * PLAYER / GAME STATE
+         */
+
+        socket.on(
+            "updatePlayers",
+            (newPlayers) => {
+
+                players =
+                    newPlayers;
+
+                drawGame();
+                updateHUD();
+            }
+        );
+
+    }
+
+
+    /*
+     * =========================
+     * MOUSE AIMING
+     * =========================
+     */
+
+    canvas.addEventListener(
+        "mousemove",
+        (e) => {
+
+            const rect =
+                canvas.getBoundingClientRect();
+
+
+            mouseX =
+                e.clientX - rect.left;
+
+            mouseY =
+                e.clientY - rect.top;
+
+
+            updateAim();
+        }
+    );
+
+
+    function updateAim() {
+
+        if (
+            !socket ||
+            !socket.connected ||
+            !myPlayerId ||
+            !players[myPlayerId]
+        ) {
+            return;
+        }
+
+
+        const player =
+            players[myPlayerId];
+
+
+        const angle =
+            Math.atan2(
+                mouseY - player.y,
+                mouseX - player.x
+            );
+
+
+        /*
+         * Tell server which direction
+         * we're aiming.
+         */
+
+        socket.emit(
+            "aim",
+            {
+                angle: angle
+            }
+        );
+    }
+
+
+    /*
+     * =========================
+     * SHOOTING
+     * =========================
+     */
+
+    canvas.addEventListener(
+        "mousedown",
+        (e) => {
+
+            if (e.button !== 0) {
+                return;
+            }
+
+
+            shooting = true;
+
+
+            shoot();
+        }
+    );
+
+
+    window.addEventListener(
+        "mouseup",
+        (e) => {
+
+            if (e.button === 0) {
+                shooting = false;
+            }
+        }
+    );
+
+
+    function shoot() {
+
+        if (
+            !socket ||
+            !socket.connected
+        ) {
+            return;
+        }
+
+
+        socket.emit("shoot");
+    }
+
+
+    /*
+     * =========================
+     * RELOADING
+     * =========================
+     */
+
+    window.addEventListener(
+        "keydown",
+        (e) => {
+
+            if (
+                e.key.toLowerCase() === "r"
+            ) {
+
+                if (
+                    socket &&
+                    socket.connected
+                ) {
+
+                    socket.emit(
+                        "reload"
+                    );
+                }
+
+                return;
+            }
+
+        }
+    );
+
+
+    /*
+     * =========================
+     * MOVEMENT
+     * =========================
+     */
+
+    const keys = {};
+
+
+    window.addEventListener(
+        "keydown",
+        (e) => {
+
+            const key =
+                e.key.toLowerCase();
+
+
+            if (
+                [
+                    "w",
+                    "a",
+                    "s",
+                    "d",
+                    "arrowup",
+                    "arrowdown",
+                    "arrowleft",
+                    "arrowright"
+                ].includes(key)
+            ) {
+
+                e.preventDefault();
+
+                keys[key] = true;
+            }
+        }
+    );
+
+
+    window.addEventListener(
+        "keyup",
+        (e) => {
+
+            keys[
+                e.key.toLowerCase()
+            ] = false;
+        }
+    );
+
+
+    /*
+     * Send movement continuously.
+     *
+     * This will make the controls much
+     * smoother than the old keydown-only
+     * system.
+     */
+
+    function movementLoop() {
+
+        if (
+            socket &&
+            socket.connected
+        ) {
+
+            let x = 0;
+            let y = 0;
+
+
+            if (
+                keys["w"] ||
+                keys["arrowup"]
+            ) {
+                y -= 1;
+            }
+
+
+            if (
+                keys["s"] ||
+                keys["arrowdown"]
+            ) {
+                y += 1;
+            }
+
+
+            if (
+                keys["a"] ||
+                keys["arrowleft"]
+            ) {
+                x -= 1;
+            }
+
+
+            if (
+                keys["d"] ||
+                keys["arrowright"]
+            ) {
+                x += 1;
+            }
+
+
+            /*
+             * Normalize diagonal movement.
+             */
+
+            if (x !== 0 || y !== 0) {
+
+                const length =
+                    Math.sqrt(
+                        x * x + y * y
+                    );
+
+
+                x /= length;
+                y /= length;
+
+
+                socket.emit(
+                    "move",
+                    {
+                        x: x,
+                        y: y
+                    }
+                );
+            }
+        }
+
+
+        requestAnimationFrame(
+            movementLoop
+        );
+    }
+
+
+    movementLoop();
+
+
+    /*
+     * =========================
+     * DRAW GAME
+     * =========================
+     */
+
+    function drawGame() {
+
+        ctx.clearRect(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+
+        /*
+         * Draw background grid.
+         */
+
+        ctx.strokeStyle =
+            "#292929";
+
+        ctx.lineWidth = 1;
+
+
+        for (
+            let x = 0;
+            x <= canvas.width;
+            x += 40
+        ) {
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                x,
+                0
+            );
+
+            ctx.lineTo(
+                x,
+                canvas.height
+            );
+
+            ctx.stroke();
+        }
+
+
+        for (
+            let y = 0;
+            y <= canvas.height;
+            y += 40
+        ) {
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                0,
+                y
+            );
+
+            ctx.lineTo(
+                canvas.width,
+                y
+            );
+
+            ctx.stroke();
+        }
+
+
+        /*
+         * Draw players.
+         */
+
+        for (let id in players) {
+
+            const player =
+                players[id];
+
+
+            if (!player) {
+                continue;
+            }
+
+
+            /*
+             * Reloading transparency.
+             */
+
+            ctx.globalAlpha =
+                player.reloading
+                    ? 0.5
+                    : 1;
+
+
+            /*
+             * Player body.
+             */
+
+            ctx.fillStyle =
+                player.color || "green";
+
+
+            ctx.beginPath();
+
+            ctx.arc(
+                player.x,
+                player.y,
+                20,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+
+
+            /*
+             * Aim / gun indicator.
+             */
+
+            const angle =
+                player.angle || 0;
+
+
+            const gunLength = 28;
+
+
+            ctx.strokeStyle =
+                "white";
+
+            ctx.lineWidth = 6;
+
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                player.x,
+                player.y
+            );
+
+            ctx.lineTo(
+                player.x +
+                    Math.cos(angle) *
+                    gunLength,
+
+                player.y +
+                    Math.sin(angle) *
+                    gunLength
+            );
+
+            ctx.stroke();
+
+
+            /*
+             * Player outline.
+             */
+
+            ctx.strokeStyle =
+                id === myPlayerId
+                    ? "white"
+                    : "#777";
+
+            ctx.lineWidth = 2;
+
+
+            ctx.beginPath();
+
+            ctx.arc(
+                player.x,
+                player.y,
+                20,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.stroke();
+
+
+            ctx.globalAlpha = 1;
+        }
+
+    }
+
+
+    /*
+     * =========================
+     * HUD
+     * =========================
+     */
+
+    function updateHUD() {
+
+        if (
+            !myPlayerId ||
+            !players[myPlayerId]
+        ) {
+            return;
+        }
+
+
+        const player =
+            players[myPlayerId];
+
+
+        const health =
+            player.health ?? 100;
+
+        const ammo =
+            player.ammo ?? 6;
+
+
+        healthText.innerText =
+            "❤️ " + health + " HP";
+
+
+        ammoText.innerText =
+            "🔫 " +
+            ammo +
+            " / 6";
+
+
+        roundText.innerText =
+            "ROUND " +
+            (player.round ?? 1) +
+            " / 5";
+
+
+        if (player.reloading) {
+
+            reloadText.style.display =
+                "block";
+
+        } else {
+
+            reloadText.style.display =
+                "none";
+        }
+
+    }
+
+
+    /*
+     * =========================
+     * CONNECT BUTTON
+     * =========================
+     */
+
+    connectBtn.addEventListener(
+        "click",
+        connectToServer
+    );
+
+
+    /*
+     * =========================
+     * START
+     * =========================
+     */
+
+    connectToServer();
+
+</script>
+
+</body>
+</html>
