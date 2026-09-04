@@ -1,16 +1,12 @@
 {
-  "name": "free-io-game",
+  "name": "froyo.io",
   "version": "1.0.0",
-  "description": "",
+  "description": "Multiplayer browser game server",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.1"
   }
 }
