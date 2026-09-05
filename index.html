@@ -658,17 +658,18 @@ joinRoomButton.addEventListener(
 // =========================
 
 socket.on("roomJoined", (data) => {
-
     roomDisplay.innerText =
         "Room: " + data.roomCode;
 
     roomError.innerText = "";
 
+    // Hide the lobby
+    roomMenu.style.display = "none";
+
     console.log(
         "Joined room:",
         data.roomCode
     );
-
 });
 
 
