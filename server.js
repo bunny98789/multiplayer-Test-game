@@ -1,6 +1,6 @@
 // ========================================
 // FREE MULTIPLAYER GAME - SERVER
-// ROOMS + USERNAMES
+// ROOMS + USERNAMES + SPECTATING + COLORS
 // ========================================
 
 const http = require("http");
@@ -28,23 +28,26 @@ const RELOAD_TIME = 2000;
 
 
 // ========================================
-// RANDOM COLORS
+// COLORS
 // ========================================
+
+const COLORS = [
+    "#FF3366",
+    "#33FF66",
+    "#3366FF",
+    "#FFFF33",
+    "#FF9933",
+    "#CC33FF",
+    "#33FFFF"
+];
+
 
 function getRandomColor() {
 
-    const colors = [
-        "#FF3366",
-        "#33FF66",
-        "#3366FF",
-        "#FFFF33",
-        "#FF9933",
-        "#CC33FF",
-        "#33FFFF"
-    ];
-
-    return colors[
-        Math.floor(Math.random() * colors.length)
+    return COLORS[
+        Math.floor(
+            Math.random() * COLORS.length
+        )
     ];
 }
 
@@ -84,15 +87,18 @@ function sendGameState(roomCode) {
 
     if (!room) return;
 
+
     io.to(roomCode).emit(
         "updatePlayers",
         room.players
     );
 
+
     io.to(roomCode).emit(
         "updateBullets",
         room.bullets
     );
+
 }
 
 
@@ -129,9 +135,138 @@ function createPlayer(socket, username) {
 
         dead: false,
 
+        spectating: false,
+
         round: 1
 
     };
+}
+
+
+// ========================================
+// REMOVE PLAYER FROM ROOM
+// ========================================
+
+function removePlayerFromRoom(socket) {
+
+    const roomCode =
+        socket.roomCode;
+
+    if (!roomCode) {
+        return;
+    }
+
+
+    const room =
+        rooms[roomCode];
+
+    if (!room) {
+
+        socket.roomCode = null;
+
+        return;
+    }
+
+
+    const player =
+        room.players[socket.id];
+
+
+    if (!player) {
+
+        socket.roomCode = null;
+
+        return;
+    }
+
+
+    console.log(
+        `${player.username} left room ${roomCode}`
+    );
+
+
+    // Remove player's bullets
+
+    for (
+        const bulletId in room.bullets
+    ) {
+
+        if (
+            room.bullets[bulletId].owner ===
+            socket.id
+        ) {
+
+            delete room.bullets[
+                bulletId
+            ];
+
+        }
+
+    }
+
+
+    // Remove player
+
+    delete room.players[
+        socket.id
+    ];
+
+
+    // Leave Socket.IO room
+
+    socket.leave(roomCode);
+
+
+    socket.roomCode = null;
+
+
+    // Delete empty room
+
+    if (
+        Object.keys(room.players).length === 0
+    ) {
+
+        delete rooms[roomCode];
+
+        console.log(
+            `Room ${roomCode} deleted`
+        );
+
+        return;
+    }
+
+
+    // Transfer host
+
+    if (
+        room.host === socket.id
+    ) {
+
+        room.host =
+            Object.keys(
+                room.players
+            )[0];
+
+
+        const newHost =
+            room.players[
+                room.host
+            ];
+
+
+        if (newHost) {
+
+            console.log(
+                `${newHost.username} is now host of ${roomCode}`
+            );
+
+        }
+
+    }
+
+
+    sendGameState(roomCode);
+
 }
 
 
@@ -141,16 +276,21 @@ function createPlayer(socket, username) {
 
 function startReload(roomCode, playerId) {
 
-    const room = rooms[roomCode];
+    const room =
+        rooms[roomCode];
 
     if (!room) return;
+
 
     const player =
         room.players[playerId];
 
     if (!player) return;
 
+
     if (player.dead) return;
+
+    if (player.spectating) return;
 
     if (player.reloading) return;
 
@@ -158,6 +298,7 @@ function startReload(roomCode, playerId) {
 
 
     player.reloading = true;
+
 
     sendGameState(roomCode);
 
@@ -176,9 +317,15 @@ function startReload(roomCode, playerId) {
         if (!currentPlayer) return;
 
 
-        if (currentPlayer.dead) {
+        if (
+            currentPlayer.dead ||
+            currentPlayer.spectating
+        ) {
 
-            currentPlayer.reloading = false;
+            currentPlayer.reloading =
+                false;
+
+            sendGameState(roomCode);
 
             return;
         }
@@ -194,6 +341,7 @@ function startReload(roomCode, playerId) {
         sendGameState(roomCode);
 
     }, RELOAD_TIME);
+
 }
 
 
@@ -432,6 +580,121 @@ io.on("connection", (socket) => {
 
 
     // ====================================
+    // SPECTATE
+    // ====================================
+
+    socket.on("spectate", () => {
+
+        const roomCode =
+            socket.roomCode;
+
+        const room =
+            rooms[roomCode];
+
+        if (!room) return;
+
+
+        const player =
+            room.players[socket.id];
+
+        if (!player) return;
+
+
+        player.spectating =
+            !player.spectating;
+
+
+        // Reset combat-related state
+        // when entering spectate mode
+
+        if (player.spectating) {
+
+            player.reloading =
+                false;
+
+            console.log(
+                `${player.username} is now spectating in ${roomCode}`
+            );
+
+        } else {
+
+            console.log(
+                `${player.username} returned to the game in ${roomCode}`
+            );
+
+        }
+
+
+        sendGameState(roomCode);
+
+    });
+
+
+    // ====================================
+    // CHANGE COLOR
+    // ====================================
+
+    socket.on("changeColor", () => {
+
+        const roomCode =
+            socket.roomCode;
+
+        const room =
+            rooms[roomCode];
+
+        if (!room) return;
+
+
+        const player =
+            room.players[socket.id];
+
+        if (!player) return;
+
+
+        const currentIndex =
+            COLORS.indexOf(
+                player.color
+            );
+
+
+        const nextIndex =
+            currentIndex === -1
+                ? 0
+                : (
+                    currentIndex + 1
+                ) % COLORS.length;
+
+
+        player.color =
+            COLORS[nextIndex];
+
+
+        console.log(
+            `${player.username} changed color to ${player.color}`
+        );
+
+
+        sendGameState(roomCode);
+
+    });
+
+
+    // ====================================
+    // LEAVE ROOM
+    // ====================================
+
+    socket.on("leaveRoom", () => {
+
+        removePlayerFromRoom(socket);
+
+        socket.emit(
+            "leftRoom"
+        );
+
+    });
+
+
+    // ====================================
     // MOVE
     // ====================================
 
@@ -451,7 +714,10 @@ io.on("connection", (socket) => {
 
         if (!player) return;
 
+
         if (player.dead) return;
+
+        if (player.spectating) return;
 
 
         if (
@@ -527,7 +793,10 @@ io.on("connection", (socket) => {
 
         if (!player) return;
 
+
         if (player.dead) return;
+
+        if (player.spectating) return;
 
 
         if (
@@ -571,7 +840,10 @@ io.on("connection", (socket) => {
 
         if (!player) return;
 
+
         if (player.dead) return;
+
+        if (player.spectating) return;
 
         if (player.reloading) return;
 
@@ -667,6 +939,14 @@ io.on("connection", (socket) => {
         if (!room) return;
 
 
+        const player =
+            room.players[socket.id];
+
+        if (!player) return;
+
+        if (player.spectating) return;
+
+
         startReload(
             roomCode,
             socket.id
@@ -686,72 +966,7 @@ io.on("connection", (socket) => {
         );
 
 
-        const roomCode =
-            socket.roomCode;
-
-        if (!roomCode) return;
-
-
-        const room =
-            rooms[roomCode];
-
-        if (!room) return;
-
-
-        delete room.players[
-            socket.id
-        ];
-
-
-        for (
-            const bulletId in room.bullets
-        ) {
-
-            if (
-                room.bullets[bulletId].owner ===
-                socket.id
-            ) {
-
-                delete room.bullets[
-                    bulletId
-                ];
-
-            }
-
-        }
-
-
-        // Delete empty rooms
-
-        if (
-            Object.keys(room.players).length === 0
-        ) {
-
-            delete rooms[roomCode];
-
-            console.log(
-                `Room ${roomCode} deleted`
-            );
-
-            return;
-        }
-
-
-        // Give host to another player
-
-        if (
-            room.host === socket.id
-        ) {
-
-            room.host =
-                Object.keys(
-                    room.players
-                )[0];
-
-        }
-
-
-        sendGameState(roomCode);
+        removePlayerFromRoom(socket);
 
     });
 
@@ -862,6 +1077,9 @@ setInterval(() => {
 
                 if (!player) continue;
 
+
+                // Don't hit bullet owner
+
                 if (
                     playerId ===
                     bullet.owner
@@ -869,7 +1087,15 @@ setInterval(() => {
                     continue;
                 }
 
+
+                // Dead players cannot be hit
+
                 if (player.dead) continue;
+
+
+                // Spectators cannot be hit
+
+                if (player.spectating) continue;
 
 
                 const dx =
@@ -1012,6 +1238,15 @@ setInterval(() => {
                             }
 
 
+                            // Don't respawn a spectator
+
+                            if (
+                                respawnPlayer.spectating
+                            ) {
+                                return;
+                            }
+
+
                             respawnPlayer.health =
                                 100;
 
@@ -1065,12 +1300,15 @@ setInterval(() => {
 // SERVER
 // ========================================
 
-const PORT = process.env.PORT || 3000;
+const PORT =
+    process.env.PORT || 3000;
+
 
 server.listen(
     PORT,
     "0.0.0.0",
     () => {
+
         console.log(
             "--------------------------------"
         );
@@ -1088,11 +1326,12 @@ server.listen(
         );
 
         console.log(
-            "Rooms + usernames enabled"
+            "Rooms + usernames + spectating enabled"
         );
 
         console.log(
             "--------------------------------"
         );
+
     }
 );
