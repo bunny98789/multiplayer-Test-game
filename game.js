@@ -300,7 +300,8 @@ joinRoomButton.addEventListener(
 // =========================
 
 socket.on("roomJoined", (data) => {
-    gameRoomCode.innerText = data.roomCode;
+    roomDisplay.innerText =
+        "Room: " + data.roomCode;
 
     roomError.innerText = "";
 
@@ -1005,6 +1006,27 @@ for (const id in bullets) {
         connectToServer
     );
 
+   // ESCAPE KEY
+    window.addEventListener("keydown", (e) => {
+
+    if (
+        e.target.tagName === "INPUT" ||
+        e.target.tagName === "TEXTAREA"
+    ) {
+        return;
+    }
+
+    if (e.key === "Escape") {
+
+        if (pauseMenu.style.display === "flex") {
+            pauseMenu.style.display = "none";
+        } else {
+            pauseMenu.style.display = "flex";
+        }
+
+    }
+
+});
 
     /*
      * =========================
