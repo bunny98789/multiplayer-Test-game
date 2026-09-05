@@ -1,39 +1,38 @@
+/*
+ * =========================
+ * ELEMENTS
+ * =========================
+ */
 
-    /*
-     * =========================
-     * ELEMENTS
-     * =========================
-     */
+const canvas =
+    document.getElementById("gameCanvas");
 
-    const canvas =
-        document.getElementById("gameCanvas");
+const ctx =
+    canvas.getContext("2d");
 
-    const ctx =
-        canvas.getContext("2d");
+const connectBtn =
+    document.getElementById("connect-btn");
 
-    const connectBtn =
-        document.getElementById("connect-btn");
+const serverUrlInput =
+    document.getElementById("server-url");
 
-    const serverUrlInput =
-        document.getElementById("server-url");
+const statusText =
+    document.getElementById("status");
 
-    const statusText =
-        document.getElementById("status");
+const healthText =
+    document.getElementById("health");
 
-    const healthText =
-        document.getElementById("health");
+const ammoText =
+    document.getElementById("ammo");
 
-    const ammoText =
-        document.getElementById("ammo");
+const roundText =
+    document.getElementById("round");
 
-    const roundText =
-        document.getElementById("round");
-
-    const reloadText =
-        document.getElementById("reload");
+const reloadText =
+    document.getElementById("reload");
 
 
-    const usernameInput =
+const usernameInput =
     document.getElementById("usernameInput");
 
 const createRoomButton =
@@ -51,8 +50,16 @@ const roomDisplay =
 const roomError =
     document.getElementById("roomError");
 
-    const roomMenu = document.getElementById("roomMenu");
-const gameRoomCode = document.getElementById("gameRoomCode");
+const roomMenu =
+    document.getElementById("roomMenu");
+
+const gameRoomCode =
+    document.getElementById("gameRoomCode");
+
+
+/*
+ * PAUSE MENU
+ */
 
 const pauseMenu =
     document.getElementById("pauseMenu");
@@ -66,45 +73,63 @@ const colorButton =
 const leaveRoomButton =
     document.getElementById("leaveRoomButton");
 
-    /*
-     * =========================
-     * GAME VARIABLES
-     * =========================
-     */
 
-    let socket = null;
+/*
+ * =========================
+ * GAME VARIABLES
+ * =========================
+ */
 
-    let players = {};
-    let bullets = {};
+let socket = null;
 
-    let myPlayerId = null;
+let players = {};
+let bullets = {};
 
-    let mouseX = canvas.width / 2;
-    let mouseY = canvas.height / 2;
+let myPlayerId = null;
 
-    let myAngle = 0;
+let mouseX =
+    canvas.width / 2;
 
-    const speed = 8;
-    
-    let shooting = false;
+let mouseY =
+    canvas.height / 2;
 
-    createRoomButton.addEventListener(
+let myAngle = 0;
+
+const speed = 8;
+
+let shooting = false;
+
+
+/*
+ * =========================
+ * ROOM BUTTONS
+ * =========================
+ */
+
+createRoomButton.addEventListener(
     "click",
     () => {
 
-        if (!socket || !socket.connected) {
+        if (
+            !socket ||
+            !socket.connected
+        ) {
             return;
         }
+
 
         const username =
             usernameInput.value.trim();
 
+
         if (!username) {
+
             roomError.innerText =
                 "Enter a username first.";
 
             return;
         }
+
 
         socket.emit(
             "createRoom",
@@ -119,15 +144,21 @@ joinRoomButton.addEventListener(
     "click",
     () => {
 
-        if (!socket || !socket.connected) {
+        if (
+            !socket ||
+            !socket.connected
+        ) {
             return;
         }
+
 
         const username =
             usernameInput.value.trim();
 
+
         const roomCode =
             roomInput.value.trim();
+
 
         if (!username) {
 
@@ -135,8 +166,8 @@ joinRoomButton.addEventListener(
                 "Enter a username first.";
 
             return;
-
         }
+
 
         if (!roomCode) {
 
@@ -144,15 +175,17 @@ joinRoomButton.addEventListener(
                 "Enter a room code.";
 
             return;
-
         }
 
 
         socket.emit(
             "joinRoom",
             {
-                username: username,
-                roomCode: roomCode
+                username:
+                    username,
+
+                roomCode:
+                    roomCode
             }
         );
 
@@ -160,73 +193,175 @@ joinRoomButton.addEventListener(
 );
 
 
+/*
+ * =========================
+ * PAUSE MENU BUTTONS
+ * =========================
+ */
 
-    /*
-     * =========================
-     * CONNECTION
-     * =========================
-     */
 
-    function connectToServer() {
+/*
+ * SPECTATE
+ */
 
-        if (typeof io === "undefined") {
+spectateButton.addEventListener(
+    "click",
+    () => {
 
-            console.error(
-                "Socket.io failed to load."
-            );
-
-            statusText.innerText =
-                "ERROR: Socket.io library failed to load.";
-
-            statusText.style.color =
-                "red";
-
+        if (
+            !socket ||
+            !socket.connected ||
+            !myPlayerId ||
+            !players[myPlayerId]
+        ) {
             return;
         }
 
 
-        if (socket) {
-            socket.disconnect();
+        socket.emit(
+            "spectate"
+        );
+
+
+        /*
+         * Close menu.
+         */
+
+        pauseMenu.style.display =
+            "none";
+
+    }
+);
+
+
+/*
+ * CHANGE COLOR
+ */
+
+colorButton.addEventListener(
+    "click",
+    () => {
+
+        if (
+            !socket ||
+            !socket.connected ||
+            !myPlayerId ||
+            !players[myPlayerId]
+        ) {
+            return;
         }
 
 
-        const url =
-            serverUrlInput.value.trim();
+        socket.emit(
+            "changeColor"
+        );
+
+    }
+);
 
 
-        console.log(
-            "Connecting to:",
-            url
+/*
+ * LEAVE ROOM
+ */
+
+leaveRoomButton.addEventListener(
+    "click",
+    () => {
+
+        if (
+            !socket ||
+            !socket.connected
+        ) {
+            return;
+        }
+
+
+        socket.emit(
+            "leaveRoom"
+        );
+
+    }
+);
+
+
+/*
+ * =========================
+ * CONNECTION
+ * =========================
+ */
+
+function connectToServer() {
+
+    if (
+        typeof io ===
+        "undefined"
+    ) {
+
+        console.error(
+            "Socket.io failed to load."
         );
 
 
         statusText.innerText =
-            "Connecting...";
+            "ERROR: Socket.io library failed to load.";
 
         statusText.style.color =
-            "yellow";
+            "red";
+
+        return;
+    }
 
 
-        connectBtn.innerText =
-            "Connecting...";
+    if (socket) {
 
-        connectBtn.style.backgroundColor =
-            "#b8860b";
+        socket.disconnect();
 
-
-        socket = io(url);
+    }
 
 
-        /*
-         * CONNECTED
-         */
+    const url =
+        serverUrlInput.value.trim();
 
-        socket.on("connect", () => {
+
+    console.log(
+        "Connecting to:",
+        url
+    );
+
+
+    statusText.innerText =
+        "Connecting...";
+
+    statusText.style.color =
+        "yellow";
+
+
+    connectBtn.innerText =
+        "Connecting...";
+
+    connectBtn.style.backgroundColor =
+        "#b8860b";
+
+
+    socket =
+        io(url);
+
+
+    /*
+     * =========================
+     * CONNECTED
+     * =========================
+     */
+
+    socket.on(
+        "connect",
+        () => {
 
             console.log(
                 "Connected!",
                 socket.id
             );
+
 
             myPlayerId =
                 socket.id;
@@ -240,18 +375,25 @@ joinRoomButton.addEventListener(
 
 
             statusText.innerText =
-                "Connected as " + socket.id;
+                "Connected as " +
+                socket.id;
 
             statusText.style.color =
                 "lightgreen";
-        });
+
+        }
+    );
 
 
-        /*
-         * DISCONNECTED
-         */
+    /*
+     * =========================
+     * DISCONNECTED
+     * =========================
+     */
 
-        socket.on("disconnect", (reason) => {
+    socket.on(
+        "disconnect",
+        (reason) => {
 
             console.log(
                 "Disconnected:",
@@ -259,7 +401,13 @@ joinRoomButton.addEventListener(
             );
 
 
-            myPlayerId = null;
+            myPlayerId =
+                null;
+
+
+            players = {};
+
+            bullets = {};
 
 
             connectBtn.innerText =
@@ -270,126 +418,296 @@ joinRoomButton.addEventListener(
 
 
             statusText.innerText =
-                "Disconnected: " + reason;
+                "Disconnected: " +
+                reason;
 
             statusText.style.color =
                 "orange";
-        });
 
 
-        /*
-         * CONNECTION ERROR
-         */
-
-        socket.on(
-            "connect_error",
-            (error) => {
-
-                console.error(
-                    "Connection error:",
-                    error
-                );
+            pauseMenu.style.display =
+                "none";
 
 
-                connectBtn.innerText =
-                    "Connection Failed";
-
-                connectBtn.style.backgroundColor =
-                    "red";
+            roomMenu.style.display =
+                "block";
 
 
-                statusText.innerText =
-                    "Connection error: " +
-                    error.message;
-
-                statusText.style.color =
-                    "red";
-            }
-        );
-
-// =========================
-// ROOM JOINED
-// =========================
-
-socket.on("roomJoined", (data) => {
-    gameRoomCode.innerText =
-        data.roomCode;
-
-    roomError.innerText = "";
-
-    // Hide the lobby
-    roomMenu.style.display = "none";
-
-    console.log(
-        "Joined room:",
-        data.roomCode
-    );
-});
+            gameRoomCode.innerText =
+                "---";
 
 
-// =========================
-// ROOM ERROR
-// =========================
-
-socket.on("roomError", (message) => {
-
-    roomError.innerText =
-        message;
-
-});
+            reloadText.style.display =
+                "none";
 
 
-        /*
-         * PLAYER / GAME STATE
-         */
-
-        socket.on(
-            "updatePlayers",
-            (newPlayers) => {
-
-                players =
-                    newPlayers;
-
-                drawGame();
-                updateHUD();
-            }
-        );
-
-        socket.on("updateBullets", (newBullets) => {
-            bullets = newBullets;
             drawGame();
-        });
 
-    }
-
-
-    /*
-     * =========================
-     * MOUSE AIMING
-     * =========================
-     */
-
-    canvas.addEventListener(
-        "mousemove",
-        (e) => {
-
-            const rect =
-                canvas.getBoundingClientRect();
-
-
-            mouseX =
-                e.clientX - rect.left;
-
-            mouseY =
-                e.clientY - rect.top;
-
-
-            updateAim();
         }
     );
 
 
-    function updateAim() {
+    /*
+     * =========================
+     * CONNECTION ERROR
+     * =========================
+     */
+
+    socket.on(
+        "connect_error",
+        (error) => {
+
+            console.error(
+                "Connection error:",
+                error
+            );
+
+
+            connectBtn.innerText =
+                "Connection Failed";
+
+            connectBtn.style.backgroundColor =
+                "red";
+
+
+            statusText.innerText =
+                "Connection error: " +
+                error.message;
+
+            statusText.style.color =
+                "red";
+
+        }
+    );
+
+
+    /*
+     * =========================
+     * ROOM JOINED
+     * =========================
+     */
+
+    socket.on(
+        "roomJoined",
+        (data) => {
+
+            gameRoomCode.innerText =
+                data.roomCode;
+
+
+            roomError.innerText =
+                "";
+
+
+            /*
+             * Hide lobby.
+             */
+
+            roomMenu.style.display =
+                "none";
+
+
+            console.log(
+                "Joined room:",
+                data.roomCode
+            );
+
+        }
+    );
+
+
+    /*
+     * =========================
+     * ROOM ERROR
+     * =========================
+     */
+
+    socket.on(
+        "roomError",
+        (message) => {
+
+            roomError.innerText =
+                message;
+
+        }
+    );
+
+
+    /*
+     * =========================
+     * LEFT ROOM
+     * =========================
+     */
+
+    socket.on(
+        "leftRoom",
+        () => {
+
+            console.log(
+                "Left room."
+            );
+
+
+            /*
+             * Reset local game state.
+             */
+
+            players = {};
+
+            bullets = {};
+
+
+            myAngle = 0;
+
+            shooting = false;
+
+
+            /*
+             * Close pause menu.
+             */
+
+            pauseMenu.style.display =
+                "none";
+
+
+            /*
+             * Show lobby again.
+             */
+
+            roomMenu.style.display =
+                "block";
+
+
+            /*
+             * Clear room code.
+             */
+
+            gameRoomCode.innerText =
+                "---";
+
+
+            roomDisplay.innerText =
+                "";
+
+            roomError.innerText =
+                "";
+
+
+            /*
+             * Clear reload message.
+             */
+
+            reloadText.style.display =
+                "none";
+
+
+            /*
+             * Redraw empty game.
+             */
+
+            drawGame();
+
+            updateHUD();
+
+        }
+    );
+
+
+    /*
+     * =========================
+     * PLAYER / GAME STATE
+     * =========================
+     */
+
+    socket.on(
+        "updatePlayers",
+        (newPlayers) => {
+
+            players =
+                newPlayers;
+
+
+            /*
+             * Update pause button
+             * depending on our state.
+             */
+
+            if (
+                myPlayerId &&
+                players[myPlayerId]
+            ) {
+
+                if (
+                    players[myPlayerId].spectating
+                ) {
+
+                    spectateButton.innerText =
+                        "▶ Return to Game";
+
+                } else {
+
+                    spectateButton.innerText =
+                        "👻 Spectate";
+
+                }
+
+            }
+
+
+            drawGame();
+
+            updateHUD();
+
+        }
+    );
+
+
+    socket.on(
+        "updateBullets",
+        (newBullets) => {
+
+            bullets =
+                newBullets;
+
+            drawGame();
+
+        }
+    );
+
+}
+
+
+/*
+ * =========================
+ * MOUSE AIMING
+ * =========================
+ */
+
+canvas.addEventListener(
+    "mousemove",
+    (e) => {
+
+        const rect =
+            canvas.getBoundingClientRect();
+
+
+        mouseX =
+            e.clientX -
+            rect.left;
+
+
+        mouseY =
+            e.clientY -
+            rect.top;
+
+
+        updateAim();
+
+    }
+);
+
+
+function updateAim() {
 
     if (
         !myPlayerId ||
@@ -398,8 +716,21 @@ socket.on("roomError", (message) => {
         return;
     }
 
+
     const player =
         players[myPlayerId];
+
+
+    /*
+     * Don't aim while spectating.
+     */
+
+    if (
+        player.spectating
+    ) {
+        return;
+    }
+
 
     myAngle =
         Math.atan2(
@@ -407,185 +738,271 @@ socket.on("roomError", (message) => {
             mouseX - player.x
         );
 
+
     /*
-     * Update our local player immediately
-     * so aiming feels instant.
+     * Update our local player
+     * immediately.
      */
 
-    player.angle = myAngle;
+    player.angle =
+        myAngle;
+
 
     /*
-     * Tell the server too.
+     * Tell server too.
      */
 
     if (
         socket &&
         socket.connected
     ) {
+
         socket.emit(
             "aim",
             {
-                angle: myAngle
+                angle:
+                    myAngle
             }
         );
+
     }
 
+
     drawGame();
+
 }
 
-    /*
-     * =========================
-     * SHOOTING
-     * =========================
-     */
 
-    canvas.addEventListener(
-        "mousedown",
-        (e) => {
+/*
+ * =========================
+ * SHOOTING
+ * =========================
+ */
 
-            if (e.button !== 0) {
-                return;
-            }
-
-
-            shooting = true;
-
-
-            shoot();
-        }
-    );
-
-
-    window.addEventListener(
-        "mouseup",
-        (e) => {
-
-            if (e.button === 0) {
-                shooting = false;
-            }
-        }
-    );
-
-
-    function shoot() {
+canvas.addEventListener(
+    "mousedown",
+    (e) => {
 
         if (
-            !socket ||
-            !socket.connected
+            e.button !== 0
         ) {
             return;
         }
 
 
-        socket.emit("shoot");
+        /*
+         * Don't shoot while
+         * spectating.
+         */
+
+        if (
+            myPlayerId &&
+            players[myPlayerId] &&
+            players[myPlayerId].spectating
+        ) {
+
+            return;
+
+        }
+
+
+        shooting =
+            true;
+
+
+        shoot();
+
+    }
+);
+
+
+window.addEventListener(
+    "mouseup",
+    (e) => {
+
+        if (
+            e.button === 0
+        ) {
+
+            shooting =
+                false;
+
+        }
+
+    }
+);
+
+
+function shoot() {
+
+    if (
+        !socket ||
+        !socket.connected
+    ) {
+        return;
     }
 
 
-    /*
-     * =========================
-     * RELOADING
-     * =========================
-     */
+    if (
+        !myPlayerId ||
+        !players[myPlayerId]
+    ) {
+        return;
+    }
 
-    window.addEventListener(
-        "keydown",
-        (e) => {
 
-            if (
-                e.key &&
-                e.key.toLowerCase() === "r"
-            ) {
+    if (
+        players[myPlayerId].spectating
+    ) {
+        return;
+    }
 
-                if (
-                    socket &&
-                    socket.connected
-                ) {
 
-                    socket.emit(
-                        "reload"
-                    );
-                }
-
-                return;
-            }
-
-        }
+    socket.emit(
+        "shoot"
     );
 
-
-    /*
-     * =========================
-     * MOVEMENT
-     * =========================
-     */
-
-    const keys = {};
+}
 
 
-    window.addEventListener(
-        "keydown",
-        (e) => {
+/*
+ * =========================
+ * RELOADING
+ * =========================
+ */
 
-            if (
-             e.target.tagName === "INPUT" ||
-            e.target.tagName === "TEXTAREA"
-            ) {
+window.addEventListener(
+    "keydown",
+    (e) => {
+
+        /*
+         * Don't control the game
+         * while typing in inputs.
+         */
+
+        if (
+            e.target.tagName ===
+                "INPUT" ||
+            e.target.tagName ===
+                "TEXTAREA"
+        ) {
+
             return;
-            }   
 
-            if (!e.key) {
-                return;
-            }
+        }
 
-            const key =
-                e.key.toLowerCase();
 
+        if (
+            e.key &&
+            e.key.toLowerCase() ===
+                "r"
+        ) {
 
             if (
-                [
-                    "w",
-                    "a",
-                    "s",
-                    "d",
-                    "arrowup",
-                    "arrowdown",
-                    "arrowleft",
-                    "arrowright"
-                ].includes(key)
+                socket &&
+                socket.connected &&
+                myPlayerId &&
+                players[myPlayerId] &&
+                !players[myPlayerId].spectating
             ) {
 
-                e.preventDefault();
+                socket.emit(
+                    "reload"
+                );
 
-                keys[key] = true;
-            }
-        }
-    );
-
-
-    window.addEventListener(
-        "keyup",
-        (e) => {
-
-            if (!e.key) {
-                return;
             }
 
-            keys[
-                e.key.toLowerCase()
-            ] = false;
+
+            return;
+
         }
-    );
+
+    }
+);
 
 
-    /*
-     * Send movement continuously.
-     *
-     * This will make the controls much
-     * smoother than the old keydown-only
-     * system.
-     */
+/*
+ * =========================
+ * MOVEMENT
+ * =========================
+ */
 
-    function movementLoop() {
+const keys = {};
+
+
+window.addEventListener(
+    "keydown",
+    (e) => {
+
+        if (
+            e.target.tagName ===
+                "INPUT" ||
+            e.target.tagName ===
+                "TEXTAREA"
+        ) {
+
+            return;
+
+        }
+
+
+        if (!e.key) {
+            return;
+        }
+
+
+        const key =
+            e.key.toLowerCase();
+
+
+        if (
+            [
+                "w",
+                "a",
+                "s",
+                "d",
+                "arrowup",
+                "arrowdown",
+                "arrowleft",
+                "arrowright"
+            ].includes(key)
+        ) {
+
+            e.preventDefault();
+
+            keys[key] =
+                true;
+
+        }
+
+    }
+);
+
+
+window.addEventListener(
+    "keyup",
+    (e) => {
+
+        if (!e.key) {
+            return;
+        }
+
+
+        keys[
+            e.key.toLowerCase()
+        ] = false;
+
+    }
+);
+
+
+/*
+ * =========================
+ * MOVEMENT LOOP
+ * =========================
+ */
+
+function movementLoop() {
 
     if (
         socket &&
@@ -593,6 +1010,23 @@ socket.on("roomError", (message) => {
         myPlayerId &&
         players[myPlayerId]
     ) {
+
+        /*
+         * Spectators cannot move.
+         */
+
+        if (
+            players[myPlayerId].spectating
+        ) {
+
+            requestAnimationFrame(
+                movementLoop
+            );
+
+            return;
+
+        }
+
 
         let forward = 0;
         let strafe = 0;
@@ -606,39 +1040,48 @@ socket.on("roomError", (message) => {
             keys["w"] ||
             keys["arrowup"]
         ) {
+
             forward += 1;
+
         }
+
 
         if (
             keys["s"] ||
             keys["arrowdown"]
         ) {
+
             forward -= 1;
+
         }
 
 
         /*
-         * LEFT / RIGHT STRAFE
+         * LEFT / RIGHT
          */
 
         if (
             keys["a"] ||
             keys["arrowleft"]
         ) {
+
             strafe -= 1;
+
         }
+
 
         if (
             keys["d"] ||
             keys["arrowright"]
         ) {
+
             strafe += 1;
+
         }
 
 
         /*
-         * Convert forward/strafe movement
-         * into X/Y using the player's angle.
+         * Convert movement using angle.
          */
 
         if (
@@ -646,19 +1089,30 @@ socket.on("roomError", (message) => {
             strafe !== 0
         ) {
 
-            const angle = myAngle;
+            const angle =
+                myAngle;
 
 
             let x =
-                Math.cos(angle) * forward
+                Math.cos(angle) *
+                forward
                 +
-                Math.cos(angle + Math.PI / 2) * strafe;
+                Math.cos(
+                    angle +
+                    Math.PI / 2
+                ) *
+                strafe;
 
 
             let y =
-                Math.sin(angle) * forward
+                Math.sin(angle) *
+                forward
                 +
-                Math.sin(angle + Math.PI / 2) * strafe;
+                Math.sin(
+                    angle +
+                    Math.PI / 2
+                ) *
+                strafe;
 
 
             /*
@@ -667,14 +1121,20 @@ socket.on("roomError", (message) => {
 
             const length =
                 Math.sqrt(
-                    x * x + y * y
+                    x * x +
+                    y * y
                 );
 
 
-            if (length > 0) {
+            if (
+                length > 0
+            ) {
 
-                x /= length;
-                y /= length;
+                x /=
+                    length;
+
+                y /=
+                    length;
 
             }
 
@@ -682,378 +1142,585 @@ socket.on("roomError", (message) => {
             socket.emit(
                 "move",
                 {
-                    x: x * speed,
-                    y: y * speed
+                    x:
+                        x * speed,
+
+                    y:
+                        y * speed
                 }
             );
+
         }
+
     }
 
 
     requestAnimationFrame(
         movementLoop
     );
+
 }
 
-    movementLoop();
+
+movementLoop();
+
+
+/*
+ * =========================
+ * DRAW GAME
+ * =========================
+ */
+
+function drawGame() {
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
 
 
     /*
-     * =========================
-     * DRAW GAME
-     * =========================
+     * BACKGROUND GRID
      */
 
-    function drawGame() {
-
-        ctx.clearRect(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
-
-        /*
-         * Draw background grid.
-         */
-
-        ctx.strokeStyle =
-            "#292929";
-
-        ctx.lineWidth = 1;
-
-
-        for (
-            let x = 0;
-            x <= canvas.width;
-            x += 40
-        ) {
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-                x,
-                0
-            );
-
-            ctx.lineTo(
-                x,
-                canvas.height
-            );
-
-            ctx.stroke();
-        }
-
-
-        for (
-            let y = 0;
-            y <= canvas.height;
-            y += 40
-        ) {
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-                0,
-                y
-            );
-
-            ctx.lineTo(
-                canvas.width,
-                y
-            );
-
-            ctx.stroke();
-        }
-
-
-        /*
-         * Draw players.
-         */
-
-        for (let id in players) {
-
-    const player = players[id];
-
-    if (!player) {
-        continue;
-    }
-
-    // =========================
-    // DEAD / RELOADING ALPHA
-    // =========================
-
-    if (player.dead) {
-        ctx.globalAlpha = 0.25;
-    } else if (player.reloading) {
-        ctx.globalAlpha = 0.5;
-    } else {
-        ctx.globalAlpha = 1;
-    }
-
-
-    // =========================
-    // PLAYER BODY
-    // =========================
-
-    ctx.fillStyle =
-        player.color || "green";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        player.x,
-        player.y,
-        20,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-
-    // =========================
-    // AIM / GUN
-    // =========================
-
-    const angle =
-        player.angle || 0;
-
-    const gunLength = 28;
-
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 6;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-        player.x,
-        player.y
-    );
-
-    ctx.lineTo(
-        player.x +
-            Math.cos(angle) * gunLength,
-
-        player.y +
-            Math.sin(angle) * gunLength
-    );
-
-    ctx.stroke();
-
-
-    // =========================
-    // PLAYER OUTLINE
-    // =========================
-
     ctx.strokeStyle =
-        id === myPlayerId
-            ? "white"
-            : "#777";
+        "#292929";
 
-    ctx.lineWidth = 2;
-
-    ctx.beginPath();
-
-    ctx.arc(
-        player.x,
-        player.y,
-        20,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.stroke();
+    ctx.lineWidth =
+        1;
 
 
-    // =========================
-    // DEAD PLAYER X
-    // =========================
-
-    if (player.dead) {
-
-        ctx.strokeStyle = "red";
-        ctx.lineWidth = 4;
+    for (
+        let x = 0;
+        x <= canvas.width;
+        x += 40
+    ) {
 
         ctx.beginPath();
 
         ctx.moveTo(
-            player.x - 12,
-            player.y - 12
+            x,
+            0
         );
 
         ctx.lineTo(
-            player.x + 12,
-            player.y + 12
-        );
-
-        ctx.moveTo(
-            player.x + 12,
-            player.y - 12
-        );
-
-        ctx.lineTo(
-            player.x - 12,
-            player.y + 12
+            x,
+            canvas.height
         );
 
         ctx.stroke();
+
     }
 
-        // Username
 
-ctx.globalAlpha = 1;
+    for (
+        let y = 0;
+        y <= canvas.height;
+        y += 40
+    ) {
 
-ctx.fillStyle = "white";
+        ctx.beginPath();
 
-ctx.font = "bold 14px Arial";
+        ctx.moveTo(
+            0,
+            y
+        );
 
-ctx.textAlign = "center";
+        ctx.lineTo(
+            canvas.width,
+            y
+        );
 
-ctx.textBaseline = "bottom";
+        ctx.stroke();
 
-ctx.fillText(
-    player.username,
-    player.x,
-    player.y - 25
+    }
+
+
+    /*
+     * =========================
+     * DRAW PLAYERS
+     * =========================
+     */
+
+    for (
+        let id in players
+    ) {
+
+        const player =
+            players[id];
+
+
+        if (!player) {
+            continue;
+        }
+
+
+        /*
+         * Spectators disappear
+         * from the battlefield.
+         */
+
+        if (
+            player.spectating
+        ) {
+
+            continue;
+
+        }
+
+
+        /*
+         * DEAD / RELOADING ALPHA
+         */
+
+        if (
+            player.dead
+        ) {
+
+            ctx.globalAlpha =
+                0.25;
+
+        } else if (
+            player.reloading
+        ) {
+
+            ctx.globalAlpha =
+                0.5;
+
+        } else {
+
+            ctx.globalAlpha =
+                1;
+
+        }
+
+
+        /*
+         * PLAYER BODY
+         */
+
+        ctx.fillStyle =
+            player.color ||
+            "green";
+
+
+        ctx.beginPath();
+
+
+        ctx.arc(
+            player.x,
+            player.y,
+            20,
+            0,
+            Math.PI * 2
+        );
+
+
+        ctx.fill();
+
+
+        /*
+         * AIM / GUN
+         */
+
+        const angle =
+            player.angle ||
+            0;
+
+
+        const gunLength =
+            28;
+
+
+        ctx.strokeStyle =
+            "white";
+
+        ctx.lineWidth =
+            6;
+
+
+        ctx.beginPath();
+
+
+        ctx.moveTo(
+            player.x,
+            player.y
+        );
+
+
+        ctx.lineTo(
+            player.x +
+                Math.cos(angle) *
+                gunLength,
+
+            player.y +
+                Math.sin(angle) *
+                gunLength
+        );
+
+
+        ctx.stroke();
+
+
+        /*
+         * PLAYER OUTLINE
+         */
+
+        ctx.strokeStyle =
+            id === myPlayerId
+                ? "white"
+                : "#777";
+
+
+        ctx.lineWidth =
+            2;
+
+
+        ctx.beginPath();
+
+
+        ctx.arc(
+            player.x,
+            player.y,
+            20,
+            0,
+            Math.PI * 2
+        );
+
+
+        ctx.stroke();
+
+
+        /*
+         * DEAD PLAYER X
+         */
+
+        if (
+            player.dead
+        ) {
+
+            ctx.strokeStyle =
+                "red";
+
+            ctx.lineWidth =
+                4;
+
+
+            ctx.beginPath();
+
+
+            ctx.moveTo(
+                player.x - 12,
+                player.y - 12
+            );
+
+
+            ctx.lineTo(
+                player.x + 12,
+                player.y + 12
+            );
+
+
+            ctx.moveTo(
+                player.x + 12,
+                player.y - 12
+            );
+
+
+            ctx.lineTo(
+                player.x - 12,
+                player.y + 12
+            );
+
+
+            ctx.stroke();
+
+        }
+
+
+        /*
+         * USERNAME
+         */
+
+        ctx.globalAlpha =
+            1;
+
+
+        ctx.fillStyle =
+            "white";
+
+
+        ctx.font =
+            "bold 14px Arial";
+
+
+        ctx.textAlign =
+            "center";
+
+
+        ctx.textBaseline =
+            "bottom";
+
+
+        ctx.fillText(
+            player.username,
+            player.x,
+            player.y - 25
+        );
+
+
+        ctx.globalAlpha =
+            1;
+
+    }
+
+
+    /*
+     * =========================
+     * DRAW BULLETS
+     * =========================
+     */
+
+    for (
+        const id in bullets
+    ) {
+
+        const bullet =
+            bullets[id];
+
+
+        if (!bullet) {
+            continue;
+        }
+
+
+        ctx.globalAlpha =
+            1;
+
+
+        ctx.fillStyle =
+            "white";
+
+
+        ctx.beginPath();
+
+
+        ctx.arc(
+            bullet.x,
+            bullet.y,
+            5,
+            0,
+            Math.PI * 2
+        );
+
+
+        ctx.fill();
+
+    }
+
+
+    ctx.globalAlpha =
+        1;
+
+}
+
+
+/*
+ * =========================
+ * HUD
+ * =========================
+ */
+
+function updateHUD() {
+
+    if (
+        !myPlayerId ||
+        !players[myPlayerId]
+    ) {
+
+        healthText.innerText =
+            "❤️ --- HP";
+
+        ammoText.innerText =
+            "🔫 --- / 6";
+
+        roundText.innerText =
+            "ROUND ---";
+
+        reloadText.style.display =
+            "none";
+
+        return;
+
+    }
+
+
+    const player =
+        players[myPlayerId];
+
+
+    /*
+     * SPECTATOR HUD
+     */
+
+    if (
+        player.spectating
+    ) {
+
+        healthText.innerText =
+            "👻 SPECTATING";
+
+        ammoText.innerText =
+            "👀 WATCHING";
+
+        roundText.innerText =
+            "SPECTATOR";
+
+
+        reloadText.style.display =
+            "none";
+
+
+        return;
+
+    }
+
+
+    /*
+     * NORMAL HUD
+     */
+
+    const health =
+        player.health ??
+        100;
+
+
+    const ammo =
+        player.ammo ??
+        6;
+
+
+    healthText.innerText =
+        "❤️ " +
+        health +
+        " HP";
+
+
+    ammoText.innerText =
+        "🔫 " +
+        ammo +
+        " / 6";
+
+
+    roundText.innerText =
+        "ROUND " +
+        (player.round ?? 1) +
+        " / 5";
+
+
+    if (
+        player.reloading
+    ) {
+
+        reloadText.style.display =
+            "block";
+
+    } else {
+
+        reloadText.style.display =
+            "none";
+
+    }
+
+}
+
+
+/*
+ * =========================
+ * CONNECT BUTTON
+ * =========================
+ */
+
+connectBtn.addEventListener(
+    "click",
+    connectToServer
 );
 
 
-    // =========================
-    // RESET ALPHA
-    // =========================
+/*
+ * =========================
+ * ESCAPE KEY
+ * =========================
+ */
 
-    ctx.globalAlpha = 1;
-   
-}
+window.addEventListener(
+    "keydown",
+    (e) => {
 
-// =========================
-// DRAW BULLETS
-// =========================
-
-for (const id in bullets) {
-
-    const bullet = bullets[id];
-
-    if (!bullet) {
-        continue;
-    }
-
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = "white";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        bullet.x,
-        bullet.y,
-        5,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-}
-
-}
-
-
-    /*
-     * =========================
-     * HUD
-     * =========================
-     */
-
-    function updateHUD() {
+        /*
+         * Don't open pause menu
+         * while typing.
+         */
 
         if (
-            !myPlayerId ||
-            !players[myPlayerId]
+            e.target.tagName ===
+                "INPUT" ||
+            e.target.tagName ===
+                "TEXTAREA"
         ) {
+
             return;
+
         }
 
 
-        const player =
-            players[myPlayerId];
+        if (
+            e.key &&
+            e.key === "Escape"
+        ) {
+
+            /*
+             * Only allow pause menu
+             * when actually inside a room.
+             */
+
+            if (
+                !myPlayerId ||
+                !players[myPlayerId]
+            ) {
+
+                return;
+
+            }
 
 
-        const health =
-            player.health ?? 100;
+            if (
+                pauseMenu.style.display ===
+                "flex"
+            ) {
 
-        const ammo =
-            player.ammo ?? 6;
+                pauseMenu.style.display =
+                    "none";
 
+            } else {
 
-        healthText.innerText =
-            "❤️ " + health + " HP";
+                pauseMenu.style.display =
+                    "flex";
 
+            }
 
-        ammoText.innerText =
-            "🔫 " +
-            ammo +
-            " / 6";
-
-
-        roundText.innerText =
-            "ROUND " +
-            (player.round ?? 1) +
-            " / 5";
-
-
-        if (player.reloading) {
-
-            reloadText.style.display =
-                "block";
-
-        } else {
-
-            reloadText.style.display =
-                "none";
         }
 
     }
+);
 
 
-    /*
-     * =========================
-     * CONNECT BUTTON
-     * =========================
-     */
+/*
+ * =========================
+ * START
+ * =========================
+ */
 
-    connectBtn.addEventListener(
-        "click",
-        connectToServer
-    );
-
-   // ESCAPE KEY
-    window.addEventListener("keydown", (e) => {
-
-    if (
-        e.target.tagName === "INPUT" ||
-        e.target.tagName === "TEXTAREA"
-    ) {
-        return;
-    }
-
-    if (e.key === "Escape") {
-
-        if (pauseMenu.style.display === "flex") {
-            pauseMenu.style.display = "none";
-        } else {
-            pauseMenu.style.display = "flex";
-        }
-
-    }
-
-});
-
-    /*
-     * =========================
-     * START
-     * =========================
-     */
-
-    connectToServer();
-
+connectToServer();
