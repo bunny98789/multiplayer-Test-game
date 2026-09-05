@@ -312,7 +312,7 @@ joinRoomButton.addEventListener(
 // =========================
 
 socket.on("roomJoined", (data) => {
-    roomDisplay.innerText =
+    gameRoomCode.innerText =
         "Room: " + data.roomCode;
 
     roomError.innerText = "";
@@ -492,6 +492,7 @@ socket.on("roomError", (message) => {
         (e) => {
 
             if (
+                e.key &&
                 e.key.toLowerCase() === "r"
             ) {
 
@@ -532,6 +533,10 @@ socket.on("roomError", (message) => {
             return;
             }   
 
+            if (!e.key) {
+                return;
+            }
+
             const key =
                 e.key.toLowerCase();
 
@@ -560,6 +565,10 @@ socket.on("roomError", (message) => {
     window.addEventListener(
         "keyup",
         (e) => {
+
+            if (!e.key) {
+                return;
+            }
 
             keys[
                 e.key.toLowerCase()
