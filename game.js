@@ -300,8 +300,7 @@ joinRoomButton.addEventListener(
 // =========================
 
 socket.on("roomJoined", (data) => {
-    roomDisplay.innerText =
-        "Room: " + data.roomCode;
+    gameRoomCode.innerText = data.roomCode;
 
     roomError.innerText = "";
 
