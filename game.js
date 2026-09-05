@@ -54,6 +54,18 @@ const roomError =
     const roomMenu = document.getElementById("roomMenu");
 const gameRoomCode = document.getElementById("gameRoomCode");
 
+const pauseMenu =
+    document.getElementById("pauseMenu");
+
+const spectateButton =
+    document.getElementById("spectateButton");
+
+const colorButton =
+    document.getElementById("colorButton");
+
+const leaveRoomButton =
+    document.getElementById("leaveRoomButton");
+
     /*
      * =========================
      * GAME VARIABLES
