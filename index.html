@@ -661,6 +661,9 @@ socket.on("roomJoined", (data) => {
     roomDisplay.innerText =
         "Room: " + data.roomCode;
 
+    alert("Room Code: " + data.roomCode + "(this is saved in the console, press ctrl + shift + I to view)");
+
+
     roomError.innerText = "";
 
     // Hide the lobby
